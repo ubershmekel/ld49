@@ -53,7 +53,7 @@ export const GameConfig: Phaser.Types.Core.GameConfig = {
 
 window.addEventListener('load', () => {
   // Expose `_game` to allow debugging, mute button and fullscreen button
-  (window as any)._game = new Phaser.Game(GameConfig);
+  // (window as any)._game = new Phaser.Game(GameConfig);
   const eng = views();
   eng.renderSetup(eng.engine);
 });

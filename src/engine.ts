@@ -1,12 +1,17 @@
 import Matter from 'matter-js';
 
-const options = {
+function partialChecker<T = never>() {
+  // https://stackoverflow.com/questions/69415412/a-typescript-interface-with-optional-keys/69417966#69417966
+  return <I>(input: I & T) => input as I;
+}
+
+const options = partialChecker<Matter.IRendererOptions>()({
   width: 800,
   height: 600,
   hasBounds: true,
   // showAngleIndicator: true,
   wireframes: false,
-};
+});
 
 function renderSetup(engine: Matter.Engine) {
   // create renderer
@@ -18,7 +23,8 @@ function renderSetup(engine: Matter.Engine) {
   const render = Matter.Render.create({
     engine,
     // element,
-    element: document.body,
+    element: document.getElementById("app") as HTMLElement,
+    // element: document.body,
     options,
   });
 
@@ -144,8 +150,6 @@ function renderSetup(engine: Matter.Engine) {
 
 export function views() {
   var Engine = Matter.Engine,
-    Composites = Matter.Composites,
-    Common = Matter.Common,
     Composite = Matter.Composite,
     Bodies = Matter.Bodies;
 
@@ -194,8 +198,9 @@ export function views() {
     // var engine = event.source;
 
     // apply random forces every 5 secs
-    if (event.timestamp % 5000 < 50)
-      console.log('x', body.position);
+    if (event.timestamp % 5000 < 50) {
+      // console.log('x', body.position);
+    }
   });
 
 

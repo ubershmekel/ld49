@@ -12,6 +12,11 @@ body {
   margin: auto;
 }
 
+#app canvas {
+  height: 100%;
+}
+
 .window-controls {
+  position: absolute;
   margin-bottom: 0.5em;
 }
