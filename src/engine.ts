@@ -1,13 +1,13 @@
 import Matter from 'matter-js';
 // @ts-ignore
 import decomp from 'poly-decomp';
+import { allToys } from './toys';
 
 function partialChecker<T = never>() {
   // https://stackoverflow.com/questions/69415412/a-typescript-interface-with-optional-keys/69417966#69417966
   return <I>(input: I & T) => input as I;
 }
 
-let globalRender: Matter.Render | null = null;
 interface Point {
   x: number,
   y: number,
@@ -20,11 +20,11 @@ const options = partialChecker<Matter.IRendererOptions>()({
   hasBounds: true,
   // showAngleIndicator: true,
   wireframes: false,
-  background: '#77aaff',
+  background: '#75bbfd',
 });
 
 function xyString(text: string) {
-  const parts = text.split(' ');
+  const parts = text.split(/[ ,]+/);
   const out = [];
   for (let i = 0; i < parts.length; i += 2) {
     out.push(Matter.Vector.create(+parts[i], +parts[i + 1]));
@@ -56,7 +56,6 @@ async function renderSetup(engine: Matter.Engine) {
     // element: document.body,
     options,
   });
-  globalRender = render;
 
   Matter.Render.run(render);
 
@@ -251,37 +250,32 @@ function towerHeight(engine: Matter.Engine) {
 }
 
 function addItems(engine: Matter.Engine) {
+  // Allow concavev objects
+  Matter.Common.setDecomp(decomp);
 
-  // add bodies
-  // var stack = Composites.stack(20, 20, 10, 4, 0, 0, function (x: number, y: number) {
-  //   switch (Math.round(Common.random(0, 1))) {
-
-  //     case 0:
-  //       if (Common.random() < 0.8) {
-  //         return Bodies.rectangle(x, y, Common.random(20, 50), Common.random(20, 50));
-  //       } else {
-  //         return Bodies.rectangle(x, y, Common.random(80, 120), Common.random(20, 30));
-  //       }
-  //     case 1:
-  //       var sides = Math.round(Common.random(1, 8));
-  //       sides = (sides === 3) ? 4 : sides;
-  //       return Bodies.polygon(x, y, sides, Common.random(20, 50));
-  //   }
-  //   return null;
-  // });
-  const items = [
-    Matter.Bodies.rectangle(100, 0, 30, 40),
-    Matter.Bodies.rectangle(100, 100, 190, 25),
-    Matter.Bodies.rectangle(100, 200, 90, 25),
-    Matter.Bodies.polygon(200, 200, 3, 45),
-  ];
+  const toyBodies = [];
+  const toysPerRow = 5;
+  for (const [index, toy] of allToys.entries()) {
+    const verts = xyString(toy.shape);
+    // console.log("starVerts", verts);
+    const x = 100 + (index % toysPerRow) * 150;
+    const y = 80 - 100 * Math.floor(index / toysPerRow);
+    const body = Matter.Bodies.fromVertices(x, y, [verts], {
+      render: {
+        fillStyle: toy.color,
+        lineWidth: 0,
+      }
+    }, true);
+    toyBodies.push(body);
+  };
 
   const walls = [
     // Matter.Bodies.rectangle(400, 0, 800, 50, { isStatic: true }),
     Matter.Bodies.rectangle(400, 600, 800, 50, {
+      // the floor
       isStatic: true,
       render: {
-        fillStyle: '#009900',
+        fillStyle: '#15b01a',
         // sprite: {
         //   texture: '/assets/rubber.png',
         //   xScale: 1,
@@ -293,39 +287,12 @@ function addItems(engine: Matter.Engine) {
     Matter.Bodies.rectangle(0, 300, 50, 600, { isStatic: true }),
   ];
 
-  Matter.Common.setDecomp(decomp);
-  // const star = '50 0 63 38 100 38 69 59 82 100 50 75 18 100 31 59 0 38 37 38';
-  const arrow = '40 0 40 20 100 20 100 80 40 80 40 100 0 50';
-  const chevron = '100 0 75 50 100 100 25 100 0 50 25 0';
-  const star = '50 0 63 38 100 38 69 59 82 100 50 75 18 100 31 59 0 38 37 38';
-  const horseShoe = '35 7 19 17 14 38 14 58 25 79 45 85 65 84 65 66 46 67 34 59 30 44 33 29 45 23 66 23 66 7 53 7';
-  // const starVerts = Matter.Vertices.fromPath(star, {});
-  const shapes = [arrow, chevron, star, horseShoe];
-  for (let i = 0; i < shapes.length; i++) {
-    const verts = xyString(shapes[i]);
-    // console.log("starVerts", verts);
-    const body = Matter.Bodies.fromVertices(100 + i * 150, 80, [verts], {
-      render: {
-        fillStyle: '#ee9944',
-        lineWidth: 0,
-        // strokeStyle: '#063e7b',
-        // lineWidth: 0,
-        // sprite: {
-        //   texture: '/assets/rubber.png',
-        //   xScale: 1,
-        //   yScale: 1,
-        // }
-      }
-    }, true);
-    Matter.Composite.add(engine.world, body);
-  }
-
   Matter.Composite.add(engine.world, [
-    ...items,
+    ...toyBodies,
     ...walls,
   ]);
 
-  const body = items[0];
+  const body = toyBodies[0];
   body.render.fillStyle = 'red';
   body.velocity.x = -500;
   body.velocity.y = -1500;
@@ -341,8 +308,7 @@ export function views() {
 
     // apply random forces every 5 secs
     if (event.timestamp % 5000 < 50) {
-      // console.log('x', body.position);
-
+      // console.log('h ', towerHeight(engine));
     }
   });
 
