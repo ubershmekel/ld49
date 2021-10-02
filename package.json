@@ -3,13 +3,13 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite",
+    "dev": "vite --host",
     "build": "tsc && vite build",
     "serve": "vite preview",
     "build-assets": "esmo src/assets-builder.ts"
   },
   "devDependencies": {
-    "@types/node": "^16.9.4",
+    "@types/node": "^16.10.2",
     "typescript": "^4.2.3",
     "vite": "^2.1.5"
   },
