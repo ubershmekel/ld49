@@ -1,9 +1,18 @@
 import Matter from 'matter-js';
+// @ts-ignore
+import decomp from 'poly-decomp';
 
 function partialChecker<T = never>() {
   // https://stackoverflow.com/questions/69415412/a-typescript-interface-with-optional-keys/69417966#69417966
   return <I>(input: I & T) => input as I;
 }
+
+let globalRender: Matter.Render | null = null;
+interface Point {
+  x: number,
+  y: number,
+}
+const lines: [Point, Point][] = [];
 
 const options = partialChecker<Matter.IRendererOptions>()({
   width: 800,
@@ -11,15 +20,35 @@ const options = partialChecker<Matter.IRendererOptions>()({
   hasBounds: true,
   // showAngleIndicator: true,
   wireframes: false,
+  background: '#77aaff',
 });
 
-function renderSetup(engine: Matter.Engine) {
-  // create renderer
-  // let element = undefined;
-  // if (typeof document !== 'undefined') {
-  //   element = (document as any).body;
-  // }
+function xyString(text: string) {
+  const parts = text.split(' ');
+  const out = [];
+  for (let i = 0; i < parts.length; i += 2) {
+    out.push(Matter.Vector.create(+parts[i], +parts[i + 1]));
+  }
+  return out;
+}
 
+function afterRender(render: Matter.Render) {
+  startViewTransform(render);
+
+  const ctx = render.context;
+  for (const [rayStart, rayEnd] of lines) {
+    ctx.beginPath();
+    ctx.moveTo(rayStart.x, rayStart.y);
+    ctx.lineTo(rayEnd.x, rayEnd.y);
+    ctx.strokeStyle = 'rgba(255,255,255,0.3)';
+    ctx.lineWidth = 3.5;
+    ctx.stroke();
+    // ctx.fill();
+  }
+  endViewTransform(render);
+}
+
+async function renderSetup(engine: Matter.Engine) {
   const render = Matter.Render.create({
     engine,
     // element,
@@ -27,6 +56,7 @@ function renderSetup(engine: Matter.Engine) {
     // element: document.body,
     options,
   });
+  globalRender = render;
 
   Matter.Render.run(render);
 
@@ -64,20 +94,26 @@ function renderSetup(engine: Matter.Engine) {
   };
 
   // keep track of current bounds scale (view zoom)
-  var boundsScaleTarget = 1,
-    boundsScale = {
-      x: 1,
-      y: 1
-    };
+  const minZoom = 0.6;
+  const maxZoom = 1.4
+  let boundsScaleTarget = maxZoom;
+  let boundsScale = {
+    x: 1,
+    y: 1
+  };
 
   // use a render event to control our view
+  const heightEl = document.getElementById('height-label') as HTMLElement;
+  Matter.Events.on(render, 'afterRender', () => afterRender(render));
+
   Matter.Events.on(render, 'beforeRender', function () {
     let translate;
+
 
     // mouse wheel controls zoom
     var scaleFactor = mouse.wheelDelta * -0.1;
     if (scaleFactor !== 0) {
-      if ((scaleFactor < 0 && boundsScale.x >= 0.6) || (scaleFactor > 0 && boundsScale.x <= 1.4)) {
+      if ((scaleFactor < 0 && boundsScale.x >= minZoom) || (scaleFactor > 0 && boundsScale.x <= maxZoom)) {
         boundsScaleTarget += scaleFactor;
       }
     }
@@ -137,6 +173,9 @@ function renderSetup(engine: Matter.Engine) {
       // we must update the mouse too
       Matter.Mouse.setOffset(mouse, render.bounds.min);
     }
+
+    heightEl.textContent = "height: " + towerHeight(engine);
+
   });
 
   // create runner
@@ -148,13 +187,70 @@ function renderSetup(engine: Matter.Engine) {
   Matter.Runner.run(runner, engine);
 }
 
-export function views() {
-  var Engine = Matter.Engine,
-    Composite = Matter.Composite,
-    Bodies = Matter.Bodies;
+/**
+ * Applies viewport transforms based on `render.bounds` to a render context.
+ * @method startViewTransform
+ * @param {render} render
+ */
+function startViewTransform(render: Matter.Render) {
+  var boundsWidth = render.bounds.max.x - render.bounds.min.x,
+    boundsHeight = render.bounds.max.y - render.bounds.min.y,
+    boundsScaleX = boundsWidth / (render.options.width as number),
+    boundsScaleY = boundsHeight / (render.options.height as number);
 
-  // create engine
-  const engine = Engine.create();
+  render.context.setTransform(
+    ((render.options as any).pixelRatio) / boundsScaleX, 0, 0,
+    ((render.options as any).pixelRatio) / boundsScaleY, 0, 0
+  );
+
+  render.context.translate(-render.bounds.min.x, -render.bounds.min.y);
+};
+
+/**
+ * Resets all transforms on the render context.
+ * @method endViewTransform
+ * @param {render} render
+ */
+function endViewTransform(render: Matter.Render) {
+  render.context.setTransform((render.options as any).pixelRatio, 0, 0, (render.options as any).pixelRatio, 0, 0);
+};
+
+
+function towerHeight(engine: Matter.Engine) {
+  const bodies = Matter.Composite.allBodies(engine.world);
+  let height = 0;
+  const maxHeight = 1000;
+
+  lines.length = 0;
+  for (let i = 0; i < maxHeight; i++) {
+    const y = options.height - i * 100 - 50;
+    const rayStart = { x: 0, y };
+    const rayEnd = { x: 800, y };
+    lines.push([rayStart, rayEnd]);
+    const collisions = Matter.Query.ray(bodies, rayStart, rayEnd);
+
+    let foundSteadyObject = false;
+    for (const obj of collisions) {
+      // console.log("collisions", );
+      const body = obj.bodyA;
+      if (body.isStatic) {
+        continue;
+      }
+      // console.log("velocity", body.velocity)
+      const maxVelocity = 1;
+      if (body.velocity.x < maxVelocity && body.velocity.y < maxVelocity) {
+        foundSteadyObject = true;
+        break;
+      }
+    }
+    if (foundSteadyObject) {
+      height += 1;
+    }
+  }
+  return height;
+}
+
+function addItems(engine: Matter.Engine) {
 
   // add bodies
   // var stack = Composites.stack(20, 20, 10, 4, 0, 0, function (x: number, y: number) {
@@ -174,32 +270,79 @@ export function views() {
   //   return null;
   // });
   const items = [
-    Bodies.rectangle(100, 0, 30, 40),
-    Bodies.rectangle(100, 100, 190, 25),
-    Bodies.rectangle(100, 200, 90, 25),
-    Bodies.polygon(200, 200, 3, 45),
-  ]
+    Matter.Bodies.rectangle(100, 0, 30, 40),
+    Matter.Bodies.rectangle(100, 100, 190, 25),
+    Matter.Bodies.rectangle(100, 200, 90, 25),
+    Matter.Bodies.polygon(200, 200, 3, 45),
+  ];
 
-  Composite.add(engine.world, [
+  const walls = [
+    // Matter.Bodies.rectangle(400, 0, 800, 50, { isStatic: true }),
+    Matter.Bodies.rectangle(400, 600, 800, 50, {
+      isStatic: true,
+      render: {
+        fillStyle: '#009900',
+        // sprite: {
+        //   texture: '/assets/rubber.png',
+        //   xScale: 1,
+        //   yScale: 1,
+        // }
+      }
+    }),
+    Matter.Bodies.rectangle(800, 300, 50, 600, { isStatic: true }),
+    Matter.Bodies.rectangle(0, 300, 50, 600, { isStatic: true }),
+  ];
+
+  Matter.Common.setDecomp(decomp);
+  // const star = '50 0 63 38 100 38 69 59 82 100 50 75 18 100 31 59 0 38 37 38';
+  const arrow = '40 0 40 20 100 20 100 80 40 80 40 100 0 50';
+  const chevron = '100 0 75 50 100 100 25 100 0 50 25 0';
+  const star = '50 0 63 38 100 38 69 59 82 100 50 75 18 100 31 59 0 38 37 38';
+  const horseShoe = '35 7 19 17 14 38 14 58 25 79 45 85 65 84 65 66 46 67 34 59 30 44 33 29 45 23 66 23 66 7 53 7';
+  // const starVerts = Matter.Vertices.fromPath(star, {});
+  const shapes = [arrow, chevron, star, horseShoe];
+  for (let i = 0; i < shapes.length; i++) {
+    const verts = xyString(shapes[i]);
+    // console.log("starVerts", verts);
+    const body = Matter.Bodies.fromVertices(100 + i * 150, 80, [verts], {
+      render: {
+        fillStyle: '#ee9944',
+        lineWidth: 0,
+        // strokeStyle: '#063e7b',
+        // lineWidth: 0,
+        // sprite: {
+        //   texture: '/assets/rubber.png',
+        //   xScale: 1,
+        //   yScale: 1,
+        // }
+      }
+    }, true);
+    Matter.Composite.add(engine.world, body);
+  }
+
+  Matter.Composite.add(engine.world, [
     ...items,
-    // stack,
-    // walls
-    Bodies.rectangle(400, 0, 800, 50, { isStatic: true }),
-    Bodies.rectangle(400, 600, 800, 50, { isStatic: true }),
-    Bodies.rectangle(800, 300, 50, 600, { isStatic: true }),
-    Bodies.rectangle(0, 300, 50, 600, { isStatic: true })
+    ...walls,
   ]);
 
   const body = items[0];
   body.render.fillStyle = 'red';
-  body.velocity.x = 5;
-  body.velocity.y = 5;
+  body.velocity.x = -500;
+  body.velocity.y = -1500;
+}
+
+export function views() {
+  // create engine
+  const engine = Matter.Engine.create();
+  addItems(engine);
+
   Matter.Events.on(engine, 'beforeUpdate', function (event) {
     // var engine = event.source;
 
     // apply random forces every 5 secs
     if (event.timestamp % 5000 < 50) {
       // console.log('x', body.position);
+
     }
   });
 
