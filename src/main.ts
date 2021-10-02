@@ -4,8 +4,10 @@ import 'phaser';
 import { MenuScene } from './menu-scene';
 import { gameHeight, gameWidth } from './config';
 
-const GameConfig: Phaser.Types.Core.GameConfig = {
-  title: 'ExampleGame',
+import { views } from './engine'
+
+export const GameConfig: Phaser.Types.Core.GameConfig = {
+  title: 'Tower of Babel',
   url: 'https://github.com/ubershmekel/vite-phaser-scroller-shooter',
   version: '2.0',
   width: gameWidth,
@@ -43,13 +45,15 @@ const GameConfig: Phaser.Types.Core.GameConfig = {
 };
 
 
-export class Game extends Phaser.Game {
-  constructor(config: Phaser.Types.Core.GameConfig) {
-    super(config);
-  }
-}
+// export class Game extends Phaser.Game {
+//   constructor(config: Phaser.Types.Core.GameConfig) {
+//     super(config);
+//   }
+// }
 
 window.addEventListener('load', () => {
   // Expose `_game` to allow debugging, mute button and fullscreen button
-  (window as any)._game = new Game(GameConfig);
+  (window as any)._game = new Phaser.Game(GameConfig);
+  const eng = views();
+  eng.renderSetup(eng.engine);
 });

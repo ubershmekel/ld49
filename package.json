@@ -6,7 +6,10 @@
     "dev": "vite --host",
     "build": "tsc && vite build",
     "serve": "vite preview",
-    "build-assets": "esmo src/assets-builder.ts"
+    "build-assets": "esmo src/assets-builder.ts",
+    "build-server": "vite build --ssr server/validate.ts --outDir dist/server",
+    "test-built-server": "node dist/server/validate.js",
+    "test-server": "esmo server/validate.ts"
   },
   "devDependencies": {
     "@types/node": "^16.10.2",
@@ -14,7 +17,11 @@
     "vite": "^2.1.5"
   },
   "dependencies": {
+    "@types/matter-js": "^0.17.5",
+    "canvas": "^2.8.0",
     "esno": "^0.9.1",
+    "jsdom": "^17.0.0",
+    "matter-js": "^0.17.1",
     "phaser": "^3.54.0"
   }
 }
