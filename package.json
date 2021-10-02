@@ -1,0 +1,20 @@
+{
+  "name": "ld49-tower-of-babel",
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "serve": "vite preview",
+    "build-assets": "esmo src/assets-builder.ts"
+  },
+  "devDependencies": {
+    "@types/node": "^16.9.4",
+    "typescript": "^4.2.3",
+    "vite": "^2.1.5"
+  },
+  "dependencies": {
+    "esno": "^0.9.1",
+    "phaser": "^3.54.0"
+  }
+}
