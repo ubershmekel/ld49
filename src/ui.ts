@@ -10,13 +10,20 @@ interface CanvasText {
   text: string;
   x: number;
   y: number;
+  isFixed: boolean;
 }
 
 let game: Game;
 let engine: Matter.Engine;
 let activeScene: BaseScene;
 const texts: CanvasText[] = [];
-
+let earnText: CanvasText = {
+  isFixed: false,
+  text: "$$$$",
+  x: -1000,
+  y: 0,
+};
+let cashOutButton: Matter.Body;
 
 interface DragEvent {
   mouse: Matter.Mouse;
@@ -107,7 +114,7 @@ function panView(render: Matter.Render, delta: Matter.Vector) {
   // const translate = Matter.Vector.mult(direction, speed);
   const pixelSpeedFactor = 1.0;
   const translate = Matter.Vector.mult(delta, pixelSpeedFactor);
-  console.log("panView", delta)
+  // console.log("panView", delta)
 
   // prevent the view moving outside the extents
   if (render.bounds.min.x + translate.x < extents.min.x)
@@ -175,6 +182,7 @@ export async function renderSetup(engine: Matter.Engine) {
 
 
   let prevMousePos = mouse.position;
+  panView(render, { x: 50, y: 50 });
   Matter.Events.on(mouseConstraint, "mousemove", (stuff) => {
     if (mouse.button != mouseButtons.none) {
       if (!stuff.source.body) {
@@ -197,7 +205,7 @@ export async function renderSetup(engine: Matter.Engine) {
     }
 
     // hover
-    console.log("touch-move");
+    // console.log("touch-move");
     // get vector from mouse relative to centre of viewport
     prevMousePos = Matter.Vector.clone(mouse.position);
   });
@@ -217,8 +225,8 @@ export async function renderSetup(engine: Matter.Engine) {
 
   // use a render event to control our view
   const bankEl = document.getElementById('bank-label') as HTMLElement;
-  const heightEl = document.getElementById('height-label') as HTMLElement;
-  const earnEl = document.getElementById('earn-label') as HTMLElement;
+  // const heightEl = document.getElementById('height-label') as HTMLElement;
+  // const earnEl = document.getElementById('earn-label') as HTMLElement;
 
   Matter.Events.on(render, 'afterRender', () => afterRender(render));
 
@@ -261,9 +269,17 @@ export async function renderSetup(engine: Matter.Engine) {
     const height = towerHeight(engine);
     const earn = height * height * height;
     game.setEarn(earn);
+    if (towerHeightLines.length > 0) {
+      const lastLine = towerHeightLines[towerHeightLines.length - 1];
+      earnText.x = lastLine[0].x - 10;
+      earnText.y = lastLine[0].y;
+      earnText.text = "$" + earn + "\ncash out";
+      cashOutButton.position
+      Matter.Body.setPosition(cashOutButton, { x: earnText.x, y: lastLine[0].y + 4 });
+    }
     bankEl.textContent = "bank: $" + game.getBank();
-    heightEl.textContent = "height: " + height;
-    earnEl.textContent = "earn: $" + earn;
+    // heightEl.textContent = "height: " + height;
+    // earnEl.textContent = "earn: $" + earn;
   });
 
   // create runner
@@ -303,6 +319,7 @@ function startScene(scene: typeof BaseScene) {
 }
 
 class TowerBuildingScene extends BaseScene {
+
   start() {
     // `clear` also removed the mouse callbacks.
     // Matter.World.clear(engine.world, false);
@@ -312,6 +329,28 @@ class TowerBuildingScene extends BaseScene {
     });
     const toys = game.purchasedToys();
     addItems(engine, toys);
+    // hide earnText until lines are visible
+    earnText.x = -1000;
+    texts.push(earnText);
+
+    cashOutButton = Matter.Bodies.rectangle(-1000, 200, 100, 50, {
+      isSensor: true,
+      isStatic: true,
+      render: {
+        fillStyle: 'rgba(200, 200, 0, 0.5)',
+        strokeStyle: 'dbb40c',
+        lineWidth: 3,
+      }
+    });
+    Matter.Composite.add(engine.world, cashOutButton);
+  }
+
+  startDrag({ body: body }: DragEvent) {
+    // console.log("startdrag", body);
+    if (body === cashOutButton) {
+      console.log("cash out!", cashOutButton.position.y)
+      game.cashOut();
+    }
   }
 }
 
@@ -360,6 +399,7 @@ class ShopScene extends BaseScene {
         text: toy.name + '\n$' + toy.price,
         x: body.position.x,
         y: body.position.y + 40,
+        isFixed: false,
       }
       texts.push(textItem);
     });
