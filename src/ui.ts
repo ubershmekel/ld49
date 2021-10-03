@@ -317,8 +317,8 @@ export async function renderSetup(engine: Matter.Engine) {
         const heightImageIndex = Math.floor(towerHeightLines.length / 3 - 1) % prizes.length;
         heightImage = {
           image: prizes[heightImageIndex],
-          x: lastLine[1].x + 10,
-          y: lastLine[1].y - 64,
+          x: lastLine[0].x - 200,
+          y: lastLine[0].y - 64,
         };
       } else {
         heightImage = undefined;
