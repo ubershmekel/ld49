@@ -2,7 +2,7 @@ import { JSDOM } from 'jsdom';
 import Matter from 'matter-js';
 
 // import { GameConfig } from '../src/main';
-import { views } from '../src/engine'
+import { getEngine } from '../src/engine'
 
 (async function () {
   global.dom = await JSDOM.fromFile('index.html', {
@@ -16,13 +16,13 @@ import { views } from '../src/engine'
 
   // GameConfig.type = Phaser.HEADLESS;
   // const game = new Phaser.Game(GameConfig);
-  const mat = views();
+  const engine = getEngine();
   // console.log('mat', mat);
 
   var runner = Matter.Runner.create({
     isFixed: true,
   });
-  Matter.Runner.run(runner, mat.engine);
+  Matter.Runner.run(runner, engine);
 
   // setInterval(function () {
   //   Matter.Engine.update(mat.engine, 1000 / 60);

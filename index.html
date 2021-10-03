@@ -16,8 +16,11 @@
     <div id="app">
       <div class="window-controls">
         <!-- <button onclick="_game.scale.toggleFullscreen()">fullscreen</button> -->
-        <button onclick="_game.sound.mute = !_game.sound.mute">mute</button>
+        <!-- <button onclick="_game.sound.mute = !_game.sound.mute">mute</button> -->
+        <button onclick="_game.cashOut()">Cash out</button>
         <!-- <button onclick="window.location.reload(true)">refresh</button> -->
+        <label id="bank-label"></label>
+        <label id="earn-label"></label>
         <label id="height-label"></label>
       </div>
       <!-- a canvas will get created here by matterjs -->
