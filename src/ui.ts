@@ -2,11 +2,18 @@ import Matter from 'matter-js';
 import { addItems, towerHeight, towerHeightLines } from './engine';
 import { isInFullScreen, requestFullScreen } from './full-screener';
 import { options } from './config';
+import { allToys } from './toys';
 
 const appElement = document.getElementById("app") as HTMLElement;
 
 let game: Game;
 let engine: Matter.Engine;
+let activeScene: BaseScene;
+
+interface DragEvent {
+  mouse: Matter.Mouse;
+  body: Matter.Body;
+}
 
 /**
  * Applies viewport transforms based on `render.bounds` to a render context.
@@ -69,6 +76,7 @@ const viewportCentre = {
 
 
 function translateView(render: Matter.Render, mouse: Matter.Mouse, deltaCentre: Matter.Vector) {
+  // viewTarget = deltaCentre
   const centreDist = Matter.Vector.magnitude(deltaCentre);
 
   // translate the view if mouse has moved over 50px from the centre of viewport
@@ -116,7 +124,7 @@ export async function renderSetup(engine: Matter.Engine) {
   Matter.Render.run(render);
 
   // add mouse control
-  console.log("render.canvas", render.canvas)
+  // console.log("render.canvas", render.canvas)
   var mouse = Matter.Mouse.create(render.canvas);
   let mouseConstraint = Matter.MouseConstraint.create(engine, {
     mouse,
@@ -131,20 +139,31 @@ export async function renderSetup(engine: Matter.Engine) {
 
   Matter.Composite.add(engine.world, mouseConstraint);
 
+  const containerEl = document.getElementById("fullscreen-container");
   Matter.Events.on(mouseConstraint, "mousedown", () => {
     console.log("touch");
-    const containerEl = document.getElementById("fullscreen-container");
     // const containerEl = appElement;
     if (!isInFullScreen()) {
       requestFullScreen(containerEl);
     }
   });
 
+  Matter.Events.on(mouseConstraint, "startdrag", (ev: DragEvent) => {
+    activeScene.startDrag(ev);
+  });
+
+  Matter.Events.on(mouseConstraint, "enddrag", (ev: DragEvent) => {
+    activeScene.endDrag(ev);
+  });
+
+
   let viewTarget = { x: 0, y: options.height };
   Matter.Events.on(mouseConstraint, "mousemove", () => {
+    // hover
     // console.log("touch-move");
     // get vector from mouse relative to centre of viewport
     viewTarget = Matter.Vector.sub(mouse.absolute, viewportCentre);
+    mouse.position
   });
 
   // keep the mouse in sync with rendering
@@ -201,7 +220,6 @@ export async function renderSetup(engine: Matter.Engine) {
       Matter.Mouse.setOffset(mouse, render.bounds.min);
     }
 
-    // console.log("deltaCentre", deltaCentre);
     translate = translateView(render, mouse, viewTarget);
 
     const height = towerHeight(engine);
@@ -226,39 +244,86 @@ const storageKeys = {
   purchased: 'purchased',
 }
 
-function shopScene() {
-  // `clear` also removed the mouse callbacks.
-  // Matter.World.clear(engine.world, false);
-  const everything = Matter.Composite.allBodies(engine.world);
-  everything.map(item => {
-    Matter.World.remove(engine.world, item);
-  });
-  const items = addItems(engine);
-  items.toyBodies.map(bod => {
-    bod.isStatic = true;
-    bod.render.fillStyle = '#666';
-    // const bodyParts = Matter.Composite.allBodies(bod);
-    bod.parts.map(part => {
-      part.render.fillStyle = '#666';
-    })
-    console.log('bod', bod);
-  });
+const unpurchasedStyle = '#666';
+
+function styleBody(body: Matter.Body, fillStyle: string) {
+  body.render.fillStyle = fillStyle;
+  // const bodyParts = Matter.Composite.allBodies(bod);
+  body.parts.map(part => {
+    part.render.fillStyle = fillStyle;
+  })
 }
 
-function buildScene() {
-  // `clear` also removed the mouse callbacks.
-  // Matter.World.clear(engine.world, false);
-  const everything = Matter.Composite.allBodies(engine.world);
-  everything.map(item => {
-    Matter.World.remove(engine.world, item);
-  });
-  addItems(engine);
+class BaseScene {
+  start() { }
+  startDrag(_: DragEvent) { }
+  endDrag(_: DragEvent) { }
 }
+
+function startScene(scene: typeof BaseScene) {
+  activeScene = new scene();
+  activeScene.start();
+}
+
+class TowerBuildingScene extends BaseScene {
+  start() {
+    // `clear` also removed the mouse callbacks.
+    // Matter.World.clear(engine.world, false);
+    const everything = Matter.Composite.allBodies(engine.world);
+    everything.map(item => {
+      Matter.World.remove(engine.world, item);
+    });
+    const toys = game.purchasedToys();
+    addItems(engine, toys);
+  }
+}
+
+class ShopScene extends BaseScene {
+  start() {
+    // `clear` also removed the mouse callbacks.
+    // Matter.World.clear(engine.world, false);
+    const everything = Matter.Composite.allBodies(engine.world);
+    everything.map(item => {
+      Matter.World.remove(engine.world, item);
+    });
+    const items = addItems(engine, allToys);
+    items.toyBodies.map(bod => {
+      bod.isStatic = true;
+      const toyIndex = +bod.label;
+      if (!game.isPurchased(toyIndex)) {
+        styleBody(bod, unpurchasedStyle);
+      }
+    });
+  }
+
+  startDrag({ body: body }: DragEvent) {
+    // console.log("startdrag", mouse.position, body);
+    const toyIndex = +body.label;
+    const toy = allToys[toyIndex];
+    styleBody(body, toy.color);
+  }
+
+  endDrag({ body: body }: DragEvent) {
+    // console.log("enddrag", mouse.position, body);
+    const toyIndex = +body.label;
+    const toy = allToys[toyIndex];
+    styleBody(body, toy.color);
+    if (!game.isPurchased(toyIndex)) {
+      if (game.getBank() > toy.price) {
+        game.buyToy(toyIndex);
+      }
+      styleBody(body, unpurchasedStyle);
+    }
+    startScene(TowerBuildingScene);
+  }
+}
+
+const initialBank = 3;
 
 class Game {
-  private bankMoney = 0;
+  private bankMoney = initialBank;
   private earn = 0;
-  private purchased: string[] = [];
+  private purchased: number[] = [];
 
   constructor() {
     const storedBank = localStorage.getItem(storageKeys.bank);
@@ -281,11 +346,11 @@ class Game {
     const serialized = this.bankMoney.toString()
     localStorage.setItem(storageKeys.bank, serialized);
 
-    shopScene();
+    startScene(ShopScene);
   }
 
-  buyToy(name: string) {
-    this.purchased.push(name);
+  buyToy(index: number) {
+    this.purchased.push(index);
     // dedupe
     this.purchased = [...new Set(this.purchased)];
     const serialized = JSON.stringify(this.purchased);
@@ -295,11 +360,20 @@ class Game {
   getBank() {
     return this.bankMoney;
   }
+
+  isPurchased(index: number) {
+    return this.purchased.indexOf(index) >= 0;
+  }
+
+  purchasedToys() {
+    return this.purchased.map(index => allToys[index]);
+  }
 }
 
 export function setupUI(_engine: Matter.Engine) {
   engine = _engine;
   game = new Game();
+  startScene(ShopScene);
   (window as any)._game = game;
 
   renderSetup(_engine);

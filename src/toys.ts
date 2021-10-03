@@ -1,4 +1,4 @@
-interface Toy {
+export interface Toy {
   name: string;
   shape: string;
   price: number;
@@ -10,7 +10,7 @@ export const allToys: Toy[] = [
     name: 'quarter',
     shape: '0 0, 50 0, 50 50, 0 50',
     color: '#e50000',
-    price: 1
+    price: 1,
   },
   {
     name: 'pointer',
