@@ -78,8 +78,11 @@ function endViewTransform(render: Matter.Render) {
   render.context.setTransform((render.options as any).pixelRatio, 0, 0, (render.options as any).pixelRatio, 0, 0);
 };
 
-function drawImage(ctx: CanvasRenderingContext2D,
-  image: HTMLImageElement, x: number, y: number, w: number, h: number, degrees: number) {
+function drawImage(
+  ctx: CanvasRenderingContext2D,
+  image: HTMLImageElement, x: number, y: number,
+  w: number, h: number, degrees: number
+) {
   ctx.save();
   ctx.translate(x + w / 2, y + h / 2);
   ctx.rotate(degrees * Math.PI / 180.0);
@@ -87,6 +90,17 @@ function drawImage(ctx: CanvasRenderingContext2D,
   ctx.drawImage(image, x, y, w, h);
   ctx.restore();
 }
+
+interface FlyingBill {
+  x: number;
+  y: number;
+  angle: number;
+  vx: number;
+  vy: number;
+  vangle: number;
+}
+
+const flyingBills: FlyingBill[] = [];
 
 function afterRender(render: Matter.Render) {
   startViewTransform(render);
@@ -111,17 +125,28 @@ function afterRender(render: Matter.Render) {
     // ctx.fillText(textItem.text, textItem.x, textItem.y);
     fillTextMultiLine(ctx, textItem.text, textItem.x, textItem.y);
   }
+  const time = engine.timing.timestamp;
+  // dt is ~16.6
+  const dt = engine.timing.lastDelta;
 
   if (heightImage && heightImage.image) {
-    ctx.drawImage(heightImage.image, heightImage.x + 2 * Math.cos(Date.now() / 100), heightImage.y + 2 * Math.sin(Date.now() / 100));
+    ctx.drawImage(heightImage.image, heightImage.x + 2 * Math.cos(time / 100), heightImage.y + 2 * Math.sin(time / 100));
   }
 
   endViewTransform(render);
 
+  // animate flying bills on cash out
   if (moneyImage && moneyImage.image) {
-    ctx.drawImage(moneyImage.image, 400 + 5 * Math.cos(Date.now() / 100), 400 + 5 * Math.sin(Date.now() / 100));
-    ctx.drawImage(moneyImage.image, 600 + 5 * Math.cos(Date.now() / 100), 400 + 5 * Math.sin(Date.now() / 100));
-    ctx.drawImage(moneyImage.image, 800 + 5 * Math.cos(Date.now() / 100), 300 + 5 * Math.sin(Date.now() / 100));
+    const size = 64;
+    for (const bill of flyingBills) {
+      bill.x += dt * bill.vx;
+      bill.y += dt * bill.vy;
+      bill.angle += dt * bill.vangle;
+      // gravity
+      bill.vy += dt * 0.001;
+      // drawImage(ctx, moneyImage.image, 400 + 5 * Math.cos(time / 100), 400 + 5 * Math.sin(time / 100), size, size, 1 + time);
+      drawImage(ctx, moneyImage.image, bill.x, bill.y, size, size, bill.angle);
+    }
   }
 
 }
@@ -601,9 +626,21 @@ class Game {
       x: 400,
       y: 400,
     }
+    const billCount = towerHeightLines.length * 2;
+    for (let i = 0; i < billCount; i++) {
+      flyingBills.push({
+        angle: Math.random(),
+        vangle: 1 * Math.random(),
+        vx: 0.5 - 1 * Math.random(),
+        vy: -1 + 1 * Math.random(),
+        x: 600,
+        y: 400,
+      })
+    }
     setTimeout(() => {
       moneyImage = undefined;
-    }, 1500);
+      flyingBills.length = 0;
+    }, 3500);
     startScene(ShopScene);
   }
 
