@@ -23,6 +23,13 @@ interface DragEvent {
   body: Matter.Body;
 }
 
+const mouseButtons = {
+  none: -1,
+  left: 0,
+  middle: 1,
+  right: 2,
+}
+
 /**
  * Applies viewport transforms based on `render.bounds` to a render context.
  * @method startViewTransform
@@ -80,7 +87,7 @@ function afterRender(render: Matter.Render) {
 
 // create limits for the viewport
 const extents = {
-  min: { x: -100, y: -700 },
+  min: { x: -100, y: -500 },
   max: { x: 1100, y: 700 }
 };
 
@@ -92,22 +99,15 @@ const viewportCentre = {
   y: options.height * 0.5
 };
 
-
-
-function translateView(render: Matter.Render, mouse: Matter.Mouse, deltaCentre: Matter.Vector) {
-  // viewTarget = deltaCentre
-  const centreDist = Matter.Vector.magnitude(deltaCentre);
-
-  // translate the view if mouse has moved over 50px from the centre of viewport
-  if (centreDist < 50) {
-    return;
-  }
+function panView(render: Matter.Render, delta: Matter.Vector) {
   // create a vector to translate the view, allowing the user to control view speed
-  var direction = Matter.Vector.normalise(deltaCentre);
+  // var direction = Matter.Vector.normalise(delta);
 
-  const speed = Math.min(10, Math.pow(centreDist - 50, 2) * 0.0002);
-
-  const translate = Matter.Vector.mult(direction, speed);
+  // const speed = Math.min(10, Math.pow(centreDist - 50, 2) * 0.0002);
+  // const translate = Matter.Vector.mult(direction, speed);
+  const pixelSpeedFactor = 1.0;
+  const translate = Matter.Vector.mult(delta, pixelSpeedFactor);
+  console.log("panView", delta)
 
   // prevent the view moving outside the extents
   if (render.bounds.min.x + translate.x < extents.min.x)
@@ -124,9 +124,6 @@ function translateView(render: Matter.Render, mouse: Matter.Mouse, deltaCentre: 
 
   // move the view
   Matter.Bounds.translate(render.bounds, translate);
-
-  // we must update the mouse too
-  Matter.Mouse.setOffset(mouse, render.bounds.min);
 
   return translate;
 }
@@ -161,6 +158,7 @@ export async function renderSetup(engine: Matter.Engine) {
   const containerEl = document.getElementById("fullscreen-container");
   Matter.Events.on(mouseConstraint, "mousedown", () => {
     console.log("touch");
+    prevMousePos = Matter.Vector.clone(mouse.position);
     // const containerEl = appElement;
     if (!isInFullScreen()) {
       requestFullScreen(containerEl);
@@ -176,13 +174,32 @@ export async function renderSetup(engine: Matter.Engine) {
   });
 
 
-  let viewTarget = { x: 0, y: options.height };
-  Matter.Events.on(mouseConstraint, "mousemove", () => {
+  let prevMousePos = mouse.position;
+  Matter.Events.on(mouseConstraint, "mousemove", (stuff) => {
+    if (mouse.button != mouseButtons.none) {
+      if (!stuff.source.body) {
+        // dragging background
+        const delta = Matter.Vector.sub(prevMousePos, mouse.position);
+        // console.log("panView", delta);
+        panView(render, delta);
+      }
+
+      const deltaFromCenter = Matter.Vector.sub(mouse.absolute, viewportCentre);
+      const deltaMagnitude = Matter.Vector.magnitude(deltaFromCenter);
+      if (deltaMagnitude > 150) {
+        const direction = Matter.Vector.normalise(deltaFromCenter);
+        const delta = Matter.Vector.mult(direction, 2);
+        panView(render, delta);
+      }
+
+      // we must update the mouse too
+      Matter.Mouse.setOffset(mouse, render.bounds.min);
+    }
+
     // hover
-    // console.log("touch-move");
+    console.log("touch-move");
     // get vector from mouse relative to centre of viewport
-    viewTarget = Matter.Vector.sub(mouse.absolute, viewportCentre);
-    mouse.position
+    prevMousePos = Matter.Vector.clone(mouse.position);
   });
 
   // keep the mouse in sync with rendering
@@ -239,7 +256,7 @@ export async function renderSetup(engine: Matter.Engine) {
       Matter.Mouse.setOffset(mouse, render.bounds.min);
     }
 
-    translate = translateView(render, mouse, viewTarget);
+    // translate = translateView(render, mouse, viewTarget);
 
     const height = towerHeight(engine);
     const earn = height * height * height;
