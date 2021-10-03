@@ -15,6 +15,7 @@ interface CanvasText {
 
 let game: Game;
 let engine: Matter.Engine;
+let render: Matter.Render;
 let activeScene: BaseScene;
 const texts: CanvasText[] = [];
 let earnText: CanvasText = {
@@ -136,7 +137,7 @@ function panView(render: Matter.Render, delta: Matter.Vector) {
 }
 
 export async function renderSetup(engine: Matter.Engine) {
-  const render = Matter.Render.create({
+  render = Matter.Render.create({
     engine,
     // element,
     element: appElement,
@@ -164,12 +165,22 @@ export async function renderSetup(engine: Matter.Engine) {
 
   const containerEl = document.getElementById("fullscreen-container");
   Matter.Events.on(mouseConstraint, "mousedown", () => {
-    console.log("touch");
+    // console.log("touch");
     prevMousePos = Matter.Vector.clone(mouse.position);
     // const containerEl = appElement;
     if (!isInFullScreen()) {
       requestFullScreen(containerEl);
     }
+  });
+
+  Matter.Events.on(mouseConstraint, "mouseup", () => {
+    // console.log("mouseoup");
+    prevMousePos = Matter.Vector.clone(mouse.position);
+    // prevMousePos is invalid now
+    // For some reason, `mousemove` happens right after this
+    // sometimes, without a proper `mousedown`. I suspect
+    // that only happens with `touchmove`.
+    prevMousePos = null;
   });
 
   Matter.Events.on(mouseConstraint, "startdrag", (ev: DragEvent) => {
@@ -181,14 +192,14 @@ export async function renderSetup(engine: Matter.Engine) {
   });
 
 
-  let prevMousePos = mouse.position;
+  let prevMousePos: Matter.Vector | null = mouse.position;
   panView(render, { x: 50, y: 50 });
   Matter.Events.on(mouseConstraint, "mousemove", (stuff) => {
     if (mouse.button != mouseButtons.none) {
-      if (!stuff.source.body) {
+      if (!stuff.source.body && prevMousePos) {
         // dragging background
         const delta = Matter.Vector.sub(prevMousePos, mouse.position);
-        // console.log("panView", delta);
+        // console.log("panView", prevMousePos, mouse.position);
         panView(render, delta);
       }
 
@@ -196,7 +207,7 @@ export async function renderSetup(engine: Matter.Engine) {
       const deltaMagnitude = Matter.Vector.magnitude(deltaFromCenter);
       if (deltaMagnitude > 150) {
         const direction = Matter.Vector.normalise(deltaFromCenter);
-        const delta = Matter.Vector.mult(direction, 2);
+        const delta = Matter.Vector.mult(direction, 3);
         panView(render, delta);
       }
 
@@ -502,4 +513,5 @@ export function setupUI(_engine: Matter.Engine) {
   (window as any)._game = game;
 
   renderSetup(_engine);
+
 }
