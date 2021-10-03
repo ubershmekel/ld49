@@ -146,6 +146,9 @@ function panView(render: Matter.Render, delta: Matter.Vector) {
   return translate;
 }
 
+const defaultZoom = 0.9;
+let boundsScaleTarget = defaultZoom;
+
 export async function renderSetup(engine: Matter.Engine) {
   render = Matter.Render.create({
     engine,
@@ -258,8 +261,6 @@ export async function renderSetup(engine: Matter.Engine) {
   // keep track of current bounds scale (view zoom)
   const minScale = 0.6;
   const maxScale = 1.4;
-  const defaultZoom = 0.9;
-  let boundsScaleTarget = defaultZoom;
   let boundsScale = {
     x: 1,
     y: 1,
@@ -276,10 +277,13 @@ export async function renderSetup(engine: Matter.Engine) {
     let translate;
     // mouse wheel controls zoom
     var scaleFactor = mouse.wheelDelta * -0.1;
-    if (scaleFactor !== 0) {
-      if ((scaleFactor < 0 && boundsScale.x >= minScale) || (scaleFactor > 0 && boundsScale.x <= maxScale)) {
-        boundsScaleTarget += scaleFactor;
-      }
+    boundsScaleTarget += scaleFactor;
+    // limit bounds zoom
+    if (boundsScaleTarget > maxScale) {
+      boundsScaleTarget = maxScale;
+    }
+    if (boundsScaleTarget < minScale) {
+      boundsScaleTarget = minScale;
     }
 
     // if scale has changed
@@ -328,7 +332,7 @@ export async function renderSetup(engine: Matter.Engine) {
           y: lastLine[0].y - 64,
         };
 
-        if (draggedToy?.name == 'mariobait') {
+        if (draggedToy && draggedToy.name === 'mariobait') {
           heightImage.image = imgFario;
         }
       } else {
@@ -563,6 +567,14 @@ class Game {
 
   purchasedToys() {
     return this.purchased.map(index => allToys[index]);
+  }
+
+  zoomIn() {
+    boundsScaleTarget += 0.1;
+  }
+
+  zoomOut() {
+    boundsScaleTarget -= 0.1;
   }
 }
 

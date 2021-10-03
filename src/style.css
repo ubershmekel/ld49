@@ -32,4 +32,10 @@ header {
 
 #bank-label {
   color: #fffd37;
+  font-size: 32px;
+}
+
+button {
+  min-width: 2em;
+  vertical-align: super;
 }
