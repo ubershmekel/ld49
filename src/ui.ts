@@ -88,10 +88,6 @@ function afterRender(render: Matter.Render) {
     // ctx.fill();
   }
 
-  if (heightImage) {
-    ctx.drawImage(heightImage.image, heightImage.x + Math.cos(Date.now() / 100), heightImage.y + Math.sin(Date.now() / 100));
-  }
-
   // draw text
   ctx.fillStyle = '#fff';
   ctx.font = '24px sans-serif';
@@ -99,6 +95,10 @@ function afterRender(render: Matter.Render) {
   for (const textItem of texts) {
     // ctx.fillText(textItem.text, textItem.x, textItem.y);
     fillTextMultiLine(ctx, textItem.text, textItem.x, textItem.y);
+  }
+
+  if (heightImage && heightImage.image) {
+    ctx.drawImage(heightImage.image, heightImage.x + Math.cos(Date.now() / 100), heightImage.y + Math.sin(Date.now() / 100));
   }
 
   endViewTransform(render);
