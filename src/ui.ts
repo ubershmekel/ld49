@@ -87,7 +87,7 @@ function afterRender(render: Matter.Render) {
 
 // create limits for the viewport
 const extents = {
-  min: { x: -100, y: -500 },
+  min: { x: -200, y: -600 },
   max: { x: 1100, y: 700 }
 };
 
