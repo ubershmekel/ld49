@@ -221,10 +221,20 @@ export async function renderSetup(engine: Matter.Engine) {
   Matter.Runner.run(runner, engine);
 }
 
+const storageKeys = {
+  bank: 'bank',
+}
 
 class Game {
   private bankMoney = 0;
   private earn = 0;
+
+  constructor() {
+    const storedBank = localStorage.getItem(storageKeys.bank)
+    if (storedBank) {
+      this.bankMoney = +storedBank;
+    }
+  }
 
   setEarn(earn: number) {
     this.earn = earn;
@@ -232,6 +242,7 @@ class Game {
 
   cashOut() {
     this.bankMoney += this.earn;
+    localStorage.setItem(storageKeys.bank, this.bankMoney.toString());
 
     // `clear` also removed the mouse callbacks.
     // Matter.World.clear(engine.world, false);
