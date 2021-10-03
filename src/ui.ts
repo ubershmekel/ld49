@@ -13,6 +13,8 @@ interface CanvasText {
   isFixed: boolean;
 }
 
+
+
 let game: Game;
 let engine: Matter.Engine;
 let render: Matter.Render;
@@ -51,7 +53,7 @@ function startViewTransform(render: Matter.Render) {
 
   render.context.setTransform(
     ((render.options as any).pixelRatio) / boundsScaleX, 0, 0,
-    ((render.options as any).pixelRatio) / boundsScaleY, 0, 0
+    ((render.options as any).pixelRatio) / boundsScaleY, 0, 0,
   );
 
   render.context.translate(-render.bounds.min.x, -render.bounds.min.y);
@@ -81,6 +83,8 @@ function afterRender(render: Matter.Render) {
     // ctx.fill();
   }
 
+  // ctx.drawImage(imgGod, 2 * Math.random(), 2 * Math.random());
+
   // draw text
   ctx.fillStyle = '#fff';
   ctx.font = '24px sans-serif';
@@ -95,14 +99,12 @@ function afterRender(render: Matter.Render) {
 
 // create limits for the viewport
 const extents = {
-  min: { x: -200, y: -600 },
+  min: { x: -500, y: -600 },
   max: { x: 1100, y: 700 }
 };
 
 // get the centre of the viewport
 const viewportCentre = {
-  // x: gameWidth / 2,
-  // y: gameHeight / 2,
   x: options.width * 0.5,
   y: options.height * 0.5
 };
@@ -193,7 +195,8 @@ export async function renderSetup(engine: Matter.Engine) {
 
 
   let prevMousePos: Matter.Vector | null = mouse.position;
-  panView(render, { x: 50, y: 50 });
+  // initial view should have instructions visible
+  panView(render, { x: -650, y: -100 });
   Matter.Events.on(mouseConstraint, "mousemove", (stuff) => {
     if (mouse.button != mouseButtons.none) {
       if (!stuff.source.body && prevMousePos) {
@@ -205,7 +208,10 @@ export async function renderSetup(engine: Matter.Engine) {
 
       const deltaFromCenter = Matter.Vector.sub(mouse.absolute, viewportCentre);
       const deltaMagnitude = Matter.Vector.magnitude(deltaFromCenter);
-      if (deltaMagnitude > 150) {
+      if (stuff.source.body && deltaMagnitude > 150) {
+        // When dragging things, let the edge of the map pan
+        // so you can e.g. bring something from the floor to very high
+        // up without letting go.
         const direction = Matter.Vector.normalise(deltaFromCenter);
         const delta = Matter.Vector.mult(direction, 3);
         panView(render, delta);
@@ -325,6 +331,12 @@ class BaseScene {
 
 function startScene(scene: typeof BaseScene) {
   texts.length = 0;
+  texts.push({
+    isFixed: false,
+    text: "Purchase blocks\nBuild a tower\nTaller towers earn WAY more money\nCash out when your tower is ready\nRepeat",
+    x: -200,
+    y: 0,
+  })
   activeScene = new scene();
   activeScene.start();
 }
@@ -506,6 +518,12 @@ class Game {
   }
 }
 
+const imgGod = new Image();
+imgGod.src = '/assets/god.png';
+
+const imgBirds = new Image();
+imgBirds.src = '/assets/birds.png';
+
 export function setupUI(_engine: Matter.Engine) {
   engine = _engine;
   game = new Game();
@@ -513,5 +531,6 @@ export function setupUI(_engine: Matter.Engine) {
   (window as any)._game = game;
 
   renderSetup(_engine);
+
 
 }

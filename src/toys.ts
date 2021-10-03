@@ -40,7 +40,7 @@ export const allToys: Toy[] = [
     name: 'tri-tip',
     shape: '0 0, -50 -86.6, -100 0',
     color: '#c20078',
-    price: 3,
+    price: 5,
   },
   {
     name: '1x1',
