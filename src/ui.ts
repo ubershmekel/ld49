@@ -6,9 +6,17 @@ import { allToys } from './toys';
 
 const appElement = document.getElementById("app") as HTMLElement;
 
+interface CanvasText {
+  text: string;
+  x: number;
+  y: number;
+}
+
 let game: Game;
 let engine: Matter.Engine;
 let activeScene: BaseScene;
+const texts: CanvasText[] = [];
+
 
 interface DragEvent {
   mouse: Matter.Mouse;
@@ -46,6 +54,7 @@ function endViewTransform(render: Matter.Render) {
 function afterRender(render: Matter.Render) {
   startViewTransform(render);
 
+  // draw lines
   const ctx = render.context;
   for (const [rayStart, rayEnd] of towerHeightLines) {
     ctx.beginPath();
@@ -56,6 +65,16 @@ function afterRender(render: Matter.Render) {
     ctx.stroke();
     // ctx.fill();
   }
+
+  // draw text
+  ctx.fillStyle = '#fff';
+  ctx.font = '24px sans-serif';
+  ctx.textAlign = 'center';
+  for (const textItem of texts) {
+    // ctx.fillText(textItem.text, textItem.x, textItem.y);
+    fillTextMultiLine(ctx, textItem.text, textItem.x, textItem.y);
+  }
+
   endViewTransform(render);
 }
 
@@ -261,6 +280,7 @@ class BaseScene {
 }
 
 function startScene(scene: typeof BaseScene) {
+  texts.length = 0;
   activeScene = new scene();
   activeScene.start();
 }
@@ -275,6 +295,20 @@ class TowerBuildingScene extends BaseScene {
     });
     const toys = game.purchasedToys();
     addItems(engine, toys);
+  }
+}
+
+function getToyBodies(): Matter.Body[] {
+  // toys have a label that is just a number.
+  return engine.world.bodies.filter((body) => !isNaN(+body.label));
+}
+
+function fillTextMultiLine(ctx: CanvasRenderingContext2D, text: string, x: number, y: number) {
+  var lineHeight = ctx.measureText("M").width * 1.2;
+  var lines = text.split("\n");
+  for (var i = 0; i < lines.length; ++i) {
+    ctx.fillText(lines[i], x, y);
+    y += lineHeight;
   }
 }
 
@@ -294,6 +328,16 @@ class ShopScene extends BaseScene {
         styleBody(bod, unpurchasedStyle);
       }
     });
+
+    getToyBodies().map(body => {
+      const toy = allToys[+body.label];
+      const textItem: CanvasText = {
+        text: toy.name + '\n$' + toy.price,
+        x: body.position.x,
+        y: body.position.y + 40,
+      }
+      texts.push(textItem);
+    });
   }
 
   startDrag({ body: body }: DragEvent) {
@@ -308,13 +352,15 @@ class ShopScene extends BaseScene {
     const toyIndex = +body.label;
     const toy = allToys[toyIndex];
     styleBody(body, toy.color);
-    if (!game.isPurchased(toyIndex)) {
+    if (game.isPurchased(toyIndex)) {
+      startScene(TowerBuildingScene);
+    } else {
       if (game.getBank() > toy.price) {
         game.buyToy(toyIndex);
+        startScene(TowerBuildingScene);
       }
       styleBody(body, unpurchasedStyle);
     }
-    startScene(TowerBuildingScene);
   }
 }
 
