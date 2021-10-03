@@ -56,18 +56,16 @@ export function towerHeight(engine: Matter.Engine) {
   return height;
 }
 
-export function addItems(engine: Matter.Engine) {
-  // Allow concavev objects
-  Matter.Common.setDecomp(decomp);
-
+function toysGrid() {
   const toyBodies = [];
   const toysPerRow = 5;
   for (const [index, toy] of allToys.entries()) {
     const verts = xyString(toy.shape);
     // console.log("starVerts", verts);
     const x = 100 + (index % toysPerRow) * 150;
-    const y = 80 - 100 * Math.floor(index / toysPerRow);
+    const y = 80 + 140 * Math.floor(index / toysPerRow);
     const body = Matter.Bodies.fromVertices(x, y, [verts], {
+      label: toy.name,
       render: {
         fillStyle: toy.color,
         lineWidth: 0,
@@ -75,6 +73,14 @@ export function addItems(engine: Matter.Engine) {
     }, true);
     toyBodies.push(body);
   };
+  return toyBodies;
+}
+
+export function addItems(engine: Matter.Engine) {
+  // Allow concavev objects
+  Matter.Common.setDecomp(decomp);
+
+  const toyBodies = toysGrid();
 
   const walls = [
     // Matter.Bodies.rectangle(400, 0, 800, 50, { isStatic: true }),
@@ -103,6 +109,11 @@ export function addItems(engine: Matter.Engine) {
   body.render.fillStyle = 'red';
   body.velocity.x = -500;
   body.velocity.y = -1500;
+
+  return {
+    toyBodies,
+    walls,
+  }
 }
 
 export function getEngine() {

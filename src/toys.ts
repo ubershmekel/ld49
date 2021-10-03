@@ -7,6 +7,12 @@ interface Toy {
 
 export const allToys: Toy[] = [
   {
+    name: 'quarter',
+    shape: '0 0, 50 0, 50 50, 0 50',
+    color: '#e50000',
+    price: 1
+  },
+  {
     name: 'pointer',
     shape: '40 0, 40 30, 100 30, 100 70, 40 70, 40 100, 0 50',
     color: '#89fe05',
@@ -34,42 +40,36 @@ export const allToys: Toy[] = [
     name: '1x1',
     shape: '0 0, 100 0, 100 100, 0 100',
     color: '#653700',
-    price: 1
-  },
-  {
-    name: 'quarter',
-    shape: '0 0, 50 0, 50 50, 0 50',
-    color: '#e50000',
-    price: 1
-  },
-  {
-    name: 'longnthicc',
-    shape: '0 0, 250 0, 250 50, 0 50',
-    color: '#029386',
-    price: 1
+    price: 5
   },
   {
     name: 'tri-tip',
     shape: '0 0, -50 -86.6, -100 0',
     color: '#c20078',
-    price: 1
+    price: 3
   },
   {
     name: 'noodle',
     shape: '0 0, 150 0, 150 25, 0 25',
     color: '#ffff14',
-    price: 1
+    price: 10
   },
   {
     name: 'Sir Patrick Stewart',
     shape: '0 0, 60 -50, 90 0, 50 -150',
     color: '#9a0eea',
-    price: 1
+    price: 10
   },
   {
     name: 'Little L',
     shape: '0 0, 100 0, 100 100, 50 100, 50 50, 0 50',
     color: '#d1b26f',
-    price: 1
+    price: 10
+  },
+  {
+    name: 'longnthicc',
+    shape: '0 0, 250 0, 250 50, 0 50',
+    color: '#029386',
+    price: 100
   },
 ];

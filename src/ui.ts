@@ -142,7 +142,7 @@ export async function renderSetup(engine: Matter.Engine) {
 
   let viewTarget = { x: 0, y: options.height };
   Matter.Events.on(mouseConstraint, "mousemove", () => {
-    console.log("touch-move");
+    // console.log("touch-move");
     // get vector from mouse relative to centre of viewport
     viewTarget = Matter.Vector.sub(mouse.absolute, viewportCentre);
   });
@@ -223,16 +223,52 @@ export async function renderSetup(engine: Matter.Engine) {
 
 const storageKeys = {
   bank: 'bank',
+  purchased: 'purchased',
+}
+
+function shopScene() {
+  // `clear` also removed the mouse callbacks.
+  // Matter.World.clear(engine.world, false);
+  const everything = Matter.Composite.allBodies(engine.world);
+  everything.map(item => {
+    Matter.World.remove(engine.world, item);
+  });
+  const items = addItems(engine);
+  items.toyBodies.map(bod => {
+    bod.isStatic = true;
+    bod.render.fillStyle = '#666';
+    // const bodyParts = Matter.Composite.allBodies(bod);
+    bod.parts.map(part => {
+      part.render.fillStyle = '#666';
+    })
+    console.log('bod', bod);
+  });
+}
+
+function buildScene() {
+  // `clear` also removed the mouse callbacks.
+  // Matter.World.clear(engine.world, false);
+  const everything = Matter.Composite.allBodies(engine.world);
+  everything.map(item => {
+    Matter.World.remove(engine.world, item);
+  });
+  addItems(engine);
 }
 
 class Game {
   private bankMoney = 0;
   private earn = 0;
+  private purchased: string[] = [];
 
   constructor() {
-    const storedBank = localStorage.getItem(storageKeys.bank)
+    const storedBank = localStorage.getItem(storageKeys.bank);
     if (storedBank) {
       this.bankMoney = +storedBank;
+    }
+
+    const storedPurchased = localStorage.getItem(storageKeys.purchased);
+    if (storedPurchased) {
+      this.purchased = JSON.parse(storedPurchased);
     }
   }
 
@@ -242,15 +278,18 @@ class Game {
 
   cashOut() {
     this.bankMoney += this.earn;
-    localStorage.setItem(storageKeys.bank, this.bankMoney.toString());
+    const serialized = this.bankMoney.toString()
+    localStorage.setItem(storageKeys.bank, serialized);
 
-    // `clear` also removed the mouse callbacks.
-    // Matter.World.clear(engine.world, false);
-    const everything = Matter.Composite.allBodies(engine.world);
-    everything.map(item => {
-      Matter.World.remove(engine.world, item);
-    });
-    addItems(engine);
+    shopScene();
+  }
+
+  buyToy(name: string) {
+    this.purchased.push(name);
+    // dedupe
+    this.purchased = [...new Set(this.purchased)];
+    const serialized = JSON.stringify(this.purchased);
+    localStorage.setItem(storageKeys.purchased, serialized);
   }
 
   getBank() {
