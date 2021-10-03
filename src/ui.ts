@@ -355,7 +355,7 @@ class ShopScene extends BaseScene {
     if (game.isPurchased(toyIndex)) {
       startScene(TowerBuildingScene);
     } else {
-      if (game.getBank() > toy.price) {
+      if (game.getBank() >= toy.price) {
         game.buyToy(toyIndex);
         styleBody(body, toy.color);
         // startScene(TowerBuildingScene);
@@ -391,14 +391,19 @@ class Game {
   }
 
   cashOut() {
-    this.bankMoney += this.earn;
-    const serialized = this.bankMoney.toString()
-    localStorage.setItem(storageKeys.bank, serialized);
-
+    this.setBankMoney(this.bankMoney + this.earn);
     startScene(ShopScene);
   }
 
+  setBankMoney(amount: number) {
+    this.bankMoney = amount;
+    const serialized = this.bankMoney.toString()
+    localStorage.setItem(storageKeys.bank, serialized);
+  }
+
   buyToy(index: number) {
+    const toy = allToys[index];
+    this.setBankMoney(this.bankMoney - toy.price);
     this.purchased.push(index);
     // dedupe
     this.purchased = [...new Set(this.purchased)];
