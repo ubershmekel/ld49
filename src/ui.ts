@@ -1,9 +1,10 @@
-import Matter from 'matter-js';
+import * as Matter from 'matter-js';
 import { addItems, towerHeight, towerHeightLines } from './engine';
 import { isInFullScreen, requestFullScreen } from './full-screener';
 import { options } from './config';
 import { allToys, Toy } from './toys';
-import { godpngUrl, sunpngUrl, birdspngUrl, fariopngUrl } from './assets-generated';
+import { godpngUrl, sunpngUrl, birdspngUrl, fariopngUrl, piano2mp3Url } from './assets-generated';
+import { Howl } from 'howler';
 
 const appElement = document.getElementById("app") as HTMLElement;
 
@@ -24,6 +25,7 @@ let game: Game;
 let engine: Matter.Engine;
 let render: Matter.Render;
 let activeScene: BaseScene;
+let sound: Howl;
 const texts: CanvasText[] = [];
 let earnText: CanvasText = {
   isFixed: false,
@@ -203,7 +205,15 @@ export async function renderSetup(engine: Matter.Engine) {
     activeScene.startDrag(ev);
   });
 
+  let currentSoundIndex = 0;
+  let soundOptions: soundNames[] = ['a', 'b', 'c', 'd', 'e', 'f', 'g'];
   Matter.Events.on(mouseConstraint, "enddrag", (ev: DragEvent) => {
+    if (draggedToy) {
+      // sound.play('a');
+
+      playSound(soundOptions[currentSoundIndex]);
+      currentSoundIndex = (currentSoundIndex + 1) % soundOptions.length;
+    }
     draggedToy = null;
 
     activeScene.endDrag(ev);
@@ -274,6 +284,7 @@ export async function renderSetup(engine: Matter.Engine) {
   Matter.Events.on(render, 'afterRender', () => afterRender(render));
 
   Matter.Events.on(render, 'beforeRender', function () {
+
     let translate;
     // mouse wheel controls zoom
     var scaleFactor = mouse.wheelDelta * -0.1;
@@ -537,6 +548,34 @@ class Game {
   }
 
   cashOut() {
+    console.log("cashout", towerHeightLines.length, this.earn);
+    switch (towerHeightLines.length) {
+      case 0:
+      case 1:
+        playSound('cash0')
+        break;
+      case 2:
+        playSound('cash1')
+        break;
+      case 3:
+      case 4:
+        playSound('cash2')
+        break;
+      case 5:
+      case 6:
+        playSound('cash3')
+        break;
+      case 7:
+      case 8:
+        playSound('cash4')
+        break;
+      case 9:
+      case 10:
+      case 11:
+      case 12:
+        playSound('cash5')
+        break;
+    }
     this.setBankMoney(this.bankMoney + this.earn);
     startScene(ShopScene);
   }
@@ -576,6 +615,64 @@ class Game {
   zoomOut() {
     boundsScaleTarget -= 0.1;
   }
+
+  toggleMute() {
+    const el = document.getElementById("mute-button") as HTMLElement;
+    const isMuteNow = !sound.mute();
+    sound.mute(isMuteNow);
+    if (isMuteNow) {
+      el.innerText = "unmute";
+    } else {
+      el.innerText = "mute";
+    }
+  }
+}
+
+const soundSprite = {
+  music: [0, (1 * 60 + 27) * 1000],
+  a: [(0 * 60 + 1.197) * 1000, 1000],
+  b: [(0 * 60 + 3.598) * 1000, 1000],
+  c: [(0 * 60 + 5.604) * 1000, 1000],
+  d: [(0 * 60 + 7.164) * 1000, 1000],
+  e: [(0 * 60 + 8.559) * 1000, 1000],
+  f: [(0 * 60 + 9.904) * 1000, 1000],
+  g: [(0 * 60 + 11.172) * 1000, 1000],
+  cash0: [(0 * 60 + 29.721) * 1000, 3000],
+  cash1: [(0 * 60 + 35.041) * 1000, 3400],
+  cash2: [(0 * 60 + 39.216) * 1000, 4000],
+  cash3: [(0 * 60 + 43.939) * 1000, 4000],
+  cash4: [(0 * 60 + 48.336) * 1000, 4000],
+  cash5: [(0 * 60 + 54.112) * 1000, 8000],
+};
+
+type soundNames = keyof typeof soundSprite;
+function playSound(name: soundNames) {
+  sound.play(name);
+}
+
+function soundsSetup() {
+  console.log("soundsSetup");
+  sound = new Howl({
+    src: [piano2mp3Url],
+    sprite: soundSprite as any,
+  });
+
+  // sound.play('music');
+
+  let isPaused = false;
+  setInterval(() => {
+    if (document.hidden) {
+      // music in background
+      isPaused = true;
+      sound.pause();
+    } else {
+      // tab is visible
+      isPaused = false;
+      if (isPaused) {
+        sound.play();
+      }
+    }
+  }, 100);
 }
 
 const imgGod = new Image();
@@ -591,12 +688,12 @@ const imgFario = new Image();
 imgFario.src = fariopngUrl;
 
 export function setupUI(_engine: Matter.Engine) {
+  soundsSetup();
+
   engine = _engine;
   game = new Game();
   startScene(ShopScene);
   (window as any)._game = game;
 
   renderSetup(_engine);
-
-
 }

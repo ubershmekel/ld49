@@ -1,6 +1,6 @@
-import Matter from 'matter-js';
+import * as Matter from 'matter-js';
 // @ts-ignore
-import decomp from 'poly-decomp';
+import * as decomp from 'poly-decomp';
 import { options } from './config';
 import { allToys, Toy } from './toys';
 
