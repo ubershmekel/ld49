@@ -89,7 +89,7 @@ function afterRender(render: Matter.Render) {
   }
 
   if (heightImage) {
-    ctx.drawImage(heightImage.image, heightImage.x + 2 * Math.random(), heightImage.y + 2 * Math.random());
+    ctx.drawImage(heightImage.image, heightImage.x + Math.cos(Date.now() / 100), heightImage.y + Math.sin(Date.now() / 100));
   }
 
   // draw text
@@ -124,7 +124,6 @@ function panView(render: Matter.Render, delta: Matter.Vector) {
   // const translate = Matter.Vector.mult(direction, speed);
   const pixelSpeedFactor = 1.0;
   const translate = Matter.Vector.mult(delta, pixelSpeedFactor);
-  // console.log("panView", delta)
 
   // prevent the view moving outside the extents
   if (render.bounds.min.x + translate.x < extents.min.x)
@@ -202,15 +201,28 @@ export async function renderSetup(engine: Matter.Engine) {
 
 
   let prevMousePos: Matter.Vector | null = mouse.position;
+  let prevMouseStamp = engine.timing.timestamp;
+
   // initial view should have instructions visible
   panView(render, { x: -650, y: -100 });
   Matter.Events.on(mouseConstraint, "mousemove", (stuff) => {
+    const prevMouseAge = engine.timing.timestamp - prevMouseStamp;
+    // if (prevMouseAge > 100) {
+    //   console.log("Ignoring stale prevMousePos", prevMouseAge);
+    //   prevMousePos = mouse.position;
+    //   prevMouseStamp = engine.timing.timestamp;
+    // }
     if (mouse.button != mouseButtons.none) {
-      if (!stuff.source.body && prevMousePos) {
+      if (!stuff.source.body && prevMousePos && prevMouseAge < 100) {
         // dragging background
         const delta = Matter.Vector.sub(prevMousePos, mouse.position);
         // console.log("panView", prevMousePos, mouse.position);
-        panView(render, delta);
+        const size = Matter.Vector.magnitude(delta);
+        if (size > 60) {
+          console.log("too big panView, ignoring", delta);
+        } else {
+          panView(render, delta);
+        }
       }
 
       const deltaFromCenter = Matter.Vector.sub(mouse.absolute, viewportCentre);
@@ -228,10 +240,9 @@ export async function renderSetup(engine: Matter.Engine) {
       Matter.Mouse.setOffset(mouse, render.bounds.min);
     }
 
-    // hover
     // console.log("touch-move");
-    // get vector from mouse relative to centre of viewport
     prevMousePos = Matter.Vector.clone(mouse.position);
+    prevMouseStamp = engine.timing.timestamp;
   });
 
   // keep the mouse in sync with rendering
