@@ -3,7 +3,7 @@ import { addItems, towerHeight, towerHeightLines } from './engine';
 import { isInFullScreen, requestFullScreen } from './full-screener';
 import { options } from './config';
 import { allToys, Toy } from './toys';
-import { godpngUrl, sunpngUrl, birdspngUrl, fariopngUrl, piano2mp3Url } from './assets-generated';
+import { godpngUrl, sunpngUrl, birdspngUrl, fariopngUrl, piano2mp3Url, moneypngUrl } from './assets-generated';
 import { Howl } from 'howler';
 
 const appElement = document.getElementById("app") as HTMLElement;
@@ -35,6 +35,7 @@ let earnText: CanvasText = {
 };
 let cashOutButton: Matter.Body;
 let heightImage: CanvasImage | undefined;
+let moneyImage: CanvasImage | undefined;
 let draggedToy: Toy | null = null;
 
 interface DragEvent {
@@ -77,6 +78,16 @@ function endViewTransform(render: Matter.Render) {
   render.context.setTransform((render.options as any).pixelRatio, 0, 0, (render.options as any).pixelRatio, 0, 0);
 };
 
+function drawImage(ctx: CanvasRenderingContext2D,
+  image: HTMLImageElement, x: number, y: number, w: number, h: number, degrees: number) {
+  ctx.save();
+  ctx.translate(x + w / 2, y + h / 2);
+  ctx.rotate(degrees * Math.PI / 180.0);
+  ctx.translate(-x - w / 2, -y - h / 2);
+  ctx.drawImage(image, x, y, w, h);
+  ctx.restore();
+}
+
 function afterRender(render: Matter.Render) {
   startViewTransform(render);
 
@@ -106,6 +117,13 @@ function afterRender(render: Matter.Render) {
   }
 
   endViewTransform(render);
+
+  if (moneyImage && moneyImage.image) {
+    ctx.drawImage(moneyImage.image, 400 + 5 * Math.cos(Date.now() / 100), 400 + 5 * Math.sin(Date.now() / 100));
+    ctx.drawImage(moneyImage.image, 600 + 5 * Math.cos(Date.now() / 100), 400 + 5 * Math.sin(Date.now() / 100));
+    ctx.drawImage(moneyImage.image, 800 + 5 * Math.cos(Date.now() / 100), 300 + 5 * Math.sin(Date.now() / 100));
+  }
+
 }
 
 // create limits for the viewport
@@ -578,6 +596,14 @@ class Game {
         break;
     }
     this.setBankMoney(this.bankMoney + this.earn);
+    moneyImage = {
+      image: imgMoney,
+      x: 400,
+      y: 400,
+    }
+    setTimeout(() => {
+      moneyImage = undefined;
+    }, 1500);
     startScene(ShopScene);
   }
 
@@ -687,6 +713,9 @@ imgBirds.src = birdspngUrl;
 
 const imgFario = new Image();
 imgFario.src = fariopngUrl;
+
+const imgMoney = new Image();
+imgMoney.src = moneypngUrl;
 
 export function setupUI(_engine: Matter.Engine) {
   soundsSetup();
