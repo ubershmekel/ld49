@@ -13,7 +13,11 @@ interface CanvasText {
   isFixed: boolean;
 }
 
-
+interface CanvasImage {
+  image: HTMLImageElement;
+  x: number;
+  y: number;
+}
 
 let game: Game;
 let engine: Matter.Engine;
@@ -27,6 +31,7 @@ let earnText: CanvasText = {
   y: 0,
 };
 let cashOutButton: Matter.Body;
+let heightImage: CanvasImage | undefined;
 
 interface DragEvent {
   mouse: Matter.Mouse;
@@ -83,7 +88,9 @@ function afterRender(render: Matter.Render) {
     // ctx.fill();
   }
 
-  // ctx.drawImage(imgGod, 2 * Math.random(), 2 * Math.random());
+  if (heightImage) {
+    ctx.drawImage(heightImage.image, heightImage.x + 2 * Math.random(), heightImage.y + 2 * Math.random());
+  }
 
   // draw text
   ctx.fillStyle = '#fff';
@@ -100,7 +107,7 @@ function afterRender(render: Matter.Render) {
 // create limits for the viewport
 const extents = {
   min: { x: -500, y: -600 },
-  max: { x: 1100, y: 700 }
+  max: { x: 1200, y: 700 }
 };
 
 // get the centre of the viewport
@@ -285,6 +292,7 @@ export async function renderSetup(engine: Matter.Engine) {
 
     const height = towerHeight(engine);
     const earn = height * height * height;
+    const prizes = [imgBirds, imgSun, imgGod];
     game.setEarn(earn);
     if (towerHeightLines.length > 0) {
       const lastLine = towerHeightLines[towerHeightLines.length - 1];
@@ -293,6 +301,17 @@ export async function renderSetup(engine: Matter.Engine) {
       earnText.text = "$" + earn + "\ncash out";
       cashOutButton.position
       Matter.Body.setPosition(cashOutButton, { x: earnText.x, y: lastLine[0].y + 4 });
+
+      if (towerHeightLines.length % 3 === 0) {
+        const heightImageIndex = Math.floor(towerHeightLines.length / 3 - 1) % prizes.length;
+        heightImage = {
+          image: prizes[heightImageIndex],
+          x: lastLine[1].x + 10,
+          y: lastLine[1].y - 64,
+        };
+      } else {
+        heightImage = undefined;
+      }
     }
     bankEl.textContent = "bank: $" + game.getBank();
     // heightEl.textContent = "height: " + height;
@@ -333,7 +352,7 @@ function startScene(scene: typeof BaseScene) {
   texts.length = 0;
   texts.push({
     isFixed: false,
-    text: "Purchase blocks\nBuild a tower\nTaller towers earn WAY more money\nCash out when your tower is ready\nRepeat",
+    text: "Purchase blocks\nBuild a tower\nTaller towers earn WAY more money\nCash out when your tower is ready\nRepeat until you find god",
     x: -200,
     y: 0,
   })
@@ -520,6 +539,9 @@ class Game {
 
 const imgGod = new Image();
 imgGod.src = '/assets/god.png';
+
+const imgSun = new Image();
+imgSun.src = '/assets/sun.png';
 
 const imgBirds = new Image();
 imgBirds.src = '/assets/birds.png';
