@@ -1,6 +1,7 @@
 import Matter from 'matter-js';
 // @ts-ignore
 import decomp from 'poly-decomp';
+import { isInFullScreen, requestFullScreen } from './full-screener';
 import { allToys } from './toys';
 
 function partialChecker<T = never>() {
@@ -12,10 +13,13 @@ interface Point {
   x: number,
   y: number,
 }
+
+const appElement = document.getElementById("app") as HTMLElement;
+
 const lines: [Point, Point][] = [];
 
 const options = partialChecker<Matter.IRendererOptions>()({
-  width: 800,
+  width: 1200,
   height: 600,
   hasBounds: true,
   // showAngleIndicator: true,
@@ -52,7 +56,7 @@ async function renderSetup(engine: Matter.Engine) {
   const render = Matter.Render.create({
     engine,
     // element,
-    element: document.getElementById("app") as HTMLElement,
+    element: appElement,
     // element: document.body,
     options,
   });
@@ -75,6 +79,16 @@ async function renderSetup(engine: Matter.Engine) {
 
   Matter.Composite.add(engine.world, mouseConstraint);
 
+  Matter.Events.on(mouseConstraint, "mousedown", () => {
+    console.log("touch");
+    const containerEl = document.getElementById("fullscreen-container");
+    // const containerEl = appElement;
+    if (!isInFullScreen()) {
+      requestFullScreen(containerEl);
+    }
+
+  });
+
   // keep the mouse in sync with rendering
   // render.mouse = mouse;
 
@@ -93,12 +107,13 @@ async function renderSetup(engine: Matter.Engine) {
   };
 
   // keep track of current bounds scale (view zoom)
-  const minZoom = 0.6;
-  const maxZoom = 1.4
-  let boundsScaleTarget = maxZoom;
+  const minScale = 0.6;
+  const maxScale = 1.4;
+  const defaultZoom = 0.9;
+  let boundsScaleTarget = defaultZoom;
   let boundsScale = {
     x: 1,
-    y: 1
+    y: 1,
   };
 
   // use a render event to control our view
@@ -112,7 +127,7 @@ async function renderSetup(engine: Matter.Engine) {
     // mouse wheel controls zoom
     var scaleFactor = mouse.wheelDelta * -0.1;
     if (scaleFactor !== 0) {
-      if ((scaleFactor < 0 && boundsScale.x >= minZoom) || (scaleFactor > 0 && boundsScale.x <= maxZoom)) {
+      if ((scaleFactor < 0 && boundsScale.x >= minScale) || (scaleFactor > 0 && boundsScale.x <= maxScale)) {
         boundsScaleTarget += scaleFactor;
       }
     }
@@ -222,10 +237,9 @@ function towerHeight(engine: Matter.Engine) {
 
   lines.length = 0;
   for (let i = 0; i < maxHeight; i++) {
-    const y = options.height - i * 100 - 50;
+    const y = options.height - i * 100 - 100;
     const rayStart = { x: 0, y };
     const rayEnd = { x: 800, y };
-    lines.push([rayStart, rayEnd]);
     const collisions = Matter.Query.ray(bodies, rayStart, rayEnd);
 
     let foundSteadyObject = false;
@@ -243,7 +257,10 @@ function towerHeight(engine: Matter.Engine) {
       }
     }
     if (foundSteadyObject) {
+      lines.push([rayStart, rayEnd]);
       height += 1;
+    } else {
+      break;
     }
   }
   return height;
@@ -271,8 +288,8 @@ function addItems(engine: Matter.Engine) {
 
   const walls = [
     // Matter.Bodies.rectangle(400, 0, 800, 50, { isStatic: true }),
-    Matter.Bodies.rectangle(400, 600, 800, 50, {
-      // the floor
+    Matter.Bodies.rectangle(0, 600, 2600, 50, {
+      // the floor/ground
       isStatic: true,
       render: {
         fillStyle: '#15b01a',
@@ -283,8 +300,8 @@ function addItems(engine: Matter.Engine) {
         // }
       }
     }),
-    Matter.Bodies.rectangle(800, 300, 50, 600, { isStatic: true }),
-    Matter.Bodies.rectangle(0, 300, 50, 600, { isStatic: true }),
+    Matter.Bodies.rectangle(800, 600, 50, 150, { isStatic: true }),
+    Matter.Bodies.rectangle(0, 600, 50, 150, { isStatic: true }),
   ];
 
   Matter.Composite.add(engine.world, [

@@ -12,12 +12,15 @@
   <h1>Unstabable</h1>
   <p>How tall can you go?. See <a href="https://github.com/ubershmekel/ld49">source on github</a>.</p>
   <!-- <div id="app"></div> -->
-  <div id="app">
-    <div class="window-controls">
-      <!-- <button onclick="_game.scale.toggleFullscreen()">fullscreen</button> -->
-      <button onclick="_game.sound.mute = !_game.sound.mute">mute</button>
-      <!-- <button onclick="window.location.reload(true)">refresh</button> -->
-      <label id="height-label"></label>
+  <div id="fullscreen-container">
+    <div id="app">
+      <div class="window-controls">
+        <!-- <button onclick="_game.scale.toggleFullscreen()">fullscreen</button> -->
+        <button onclick="_game.sound.mute = !_game.sound.mute">mute</button>
+        <!-- <button onclick="window.location.reload(true)">refresh</button> -->
+        <label id="height-label"></label>
+      </div>
+      <!-- a canvas will get created here by matterjs -->
     </div>
   </div>
 

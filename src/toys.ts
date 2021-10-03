@@ -43,7 +43,7 @@ export const allToys: Toy[] = [
     price: 1
   },
   {
-    name: 'long-thicc',
+    name: 'longnthicc',
     shape: '0 0, 250 0, 250 50, 0 50',
     color: '#029386',
     price: 1
@@ -61,9 +61,15 @@ export const allToys: Toy[] = [
     price: 1
   },
   {
-    name: 'trek',
-    shape: '0 0, 60 -50, 100 0, 50 -150',
+    name: 'Sir Patrick Stewart',
+    shape: '0 0, 60 -50, 90 0, 50 -150',
     color: '#9a0eea',
+    price: 1
+  },
+  {
+    name: 'Little L',
+    shape: '0 0, 100 0, 100 100, 50 100, 50 50, 0 50',
+    color: '#d1b26f',
     price: 1
   },
 ];
