@@ -2,8 +2,8 @@ import Matter from 'matter-js';
 import { addItems, towerHeight, towerHeightLines } from './engine';
 import { isInFullScreen, requestFullScreen } from './full-screener';
 import { options } from './config';
-import { allToys } from './toys';
-import { godpngUrl, sunpngUrl, birdspngUrl } from './assets-generated';
+import { allToys, Toy } from './toys';
+import { godpngUrl, sunpngUrl, birdspngUrl, fariopngUrl } from './assets-generated';
 
 const appElement = document.getElementById("app") as HTMLElement;
 
@@ -33,6 +33,7 @@ let earnText: CanvasText = {
 };
 let cashOutButton: Matter.Body;
 let heightImage: CanvasImage | undefined;
+let draggedToy: Toy | null = null;
 
 interface DragEvent {
   mouse: Matter.Mouse;
@@ -193,10 +194,15 @@ export async function renderSetup(engine: Matter.Engine) {
   });
 
   Matter.Events.on(mouseConstraint, "startdrag", (ev: DragEvent) => {
+    const toyIndex = +ev.body.label;
+    draggedToy = allToys[toyIndex];
+
     activeScene.startDrag(ev);
   });
 
   Matter.Events.on(mouseConstraint, "enddrag", (ev: DragEvent) => {
+    draggedToy = null;
+
     activeScene.endDrag(ev);
   });
 
@@ -321,6 +327,10 @@ export async function renderSetup(engine: Matter.Engine) {
           x: lastLine[0].x - 200,
           y: lastLine[0].y - 64,
         };
+
+        if (draggedToy?.name == 'mariobait') {
+          heightImage.image = imgFario;
+        }
       } else {
         heightImage = undefined;
       }
@@ -346,12 +356,17 @@ const storageKeys = {
 
 const unpurchasedStyle = '#666';
 
-function styleBody(body: Matter.Body, fillStyle: string) {
-  body.render.fillStyle = fillStyle;
-  // const bodyParts = Matter.Composite.allBodies(bod);
+function subBodyMap(body: Matter.Body, callback: (subBody: Matter.Body) => void) {
+  callback(body);
   body.parts.map(part => {
-    part.render.fillStyle = fillStyle;
+    callback(part);
   })
+}
+
+function styleBody(body: Matter.Body, fillStyle: string) {
+  subBodyMap(body, part => {
+    part.render.fillStyle = fillStyle;
+  });
 }
 
 class BaseScene {
@@ -375,8 +390,8 @@ function startScene(scene: typeof BaseScene) {
 class TowerBuildingScene extends BaseScene {
 
   start() {
-    // `clear` also removed the mouse callbacks.
-    // Matter.World.clear(engine.world, false);
+    // `Matter.World.clear` also removed the mouse callbacks.
+    // so instead, manually remove pre-existing bodies.
     const everything = Matter.Composite.allBodies(engine.world);
     everything.map(item => {
       Matter.World.remove(engine.world, item);
@@ -424,27 +439,31 @@ function fillTextMultiLine(ctx: CanvasRenderingContext2D, text: string, x: numbe
 
 class ShopScene extends BaseScene {
   start() {
-    // `clear` also removed the mouse callbacks.
-    // Matter.World.clear(engine.world, false);
+    // `Matter.World.clear` also removed the mouse callbacks.
+    // so instead, manually remove pre-existing bodies.
     const everything = Matter.Composite.allBodies(engine.world);
     everything.map(item => {
       Matter.World.remove(engine.world, item);
     });
     const items = addItems(engine, allToys);
+
+    // Paint bodies that you don't have grey.
+    // Erase bodies that you can't afford.
     items.toyBodies.map(bod => {
       bod.isStatic = true;
       const toyIndex = +bod.label;
-      const toy = allToys[toyIndex];
       if (game.isPurchased(toyIndex)) {
         return;
       }
 
+      const toy = allToys[toyIndex];
       if (game.getBank() < toy.price) {
         // can't afford it, keep it secret
         Matter.World.remove(engine.world, bod);
       }
 
       styleBody(bod, unpurchasedStyle);
+
     });
 
     getToyBodies().map(body => {
@@ -461,12 +480,10 @@ class ShopScene extends BaseScene {
 
   startDrag({ body: body }: DragEvent) {
     // console.log("startdrag", mouse.position, body);
-    const toyIndex = +body.label;
-    const toy = allToys[toyIndex];
-    if (!toy) {
+    if (!draggedToy) {
       return;
     }
-    styleBody(body, toy.color);
+    styleBody(body, draggedToy.color);
   }
 
   endDrag({ body: body }: DragEvent) {
@@ -557,6 +574,9 @@ imgSun.src = sunpngUrl;
 
 const imgBirds = new Image();
 imgBirds.src = birdspngUrl;
+
+const imgFario = new Image();
+imgFario.src = fariopngUrl;
 
 export function setupUI(_engine: Matter.Engine) {
   engine = _engine;

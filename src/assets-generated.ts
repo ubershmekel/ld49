@@ -7,6 +7,8 @@
 
 import birdspngUrl from '../assets/birds.png?url';
 export { birdspngUrl };
+import fariopngUrl from '../assets/fario.png?url';
+export { fariopngUrl };
 import godpngUrl from '../assets/god.png?url';
 export { godpngUrl };
 import rotatephonesvgUrl from '../assets/rotate-phone.svg?url';
