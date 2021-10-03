@@ -3,6 +3,7 @@ import { addItems, towerHeight, towerHeightLines } from './engine';
 import { isInFullScreen, requestFullScreen } from './full-screener';
 import { options } from './config';
 import { allToys } from './toys';
+import { godpngUrl, sunpngUrl, birdspngUrl } from './assets-generated';
 
 const appElement = document.getElementById("app") as HTMLElement;
 
@@ -549,13 +550,13 @@ class Game {
 }
 
 const imgGod = new Image();
-imgGod.src = '/assets/god.png';
+imgGod.src = godpngUrl;
 
 const imgSun = new Image();
-imgSun.src = '/assets/sun.png';
+imgSun.src = sunpngUrl;
 
 const imgBirds = new Image();
-imgBirds.src = '/assets/birds.png';
+imgBirds.src = birdspngUrl;
 
 export function setupUI(_engine: Matter.Engine) {
   engine = _engine;

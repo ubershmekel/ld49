@@ -13,10 +13,9 @@ const banner = `//////////////////////////////////////////////////////
 // GENERATED FILE - DO NOT EDIT
 // See "assets-builder.ts" for more information.
 //////////////////////////////////////////////////////
+`;
 
-import 'phaser';`;
-
-function genImportExportLines(namesList: string[]) {
+function generateURLExports(namesList: string[]) {
   const out = [];
   for (const fileName of namesList) {
     const jsName = jsNamify(fileName);
@@ -71,20 +70,37 @@ function exportAseprite(files: string[]) {
   }
 }
 
-function main() {
+// function generatePhaserTools(out: string[], files: string[], loaders: any) {
+//   out.push("import 'phaser';");
+//   // keys
+//   out.push('\nexport const fkey = {');
+//   for (const fileName of files) {
+//     const jsName = jsNamify(fileName);
+//     const line = `  ${jsName}: '${jsName}',`;
+//     out.push(line);
+//   }
+//   out.push('}');
 
-  // Simplify all the processing to just be local directory
-  process.chdir(assetsDir);
+//   // preload function
+//   out.push('\nexport function preloadAll(scene: Phaser.Scene) {');
+//   for (const fileName of files) {
+//     const ext = path.extname(fileName) as keyof typeof loaders;
+//     const jsName = jsNamify(fileName);
+//     const line = `  scene.load.${loaders[ext]}(fkey.${jsName}, ${jsName}Url);`;
+//     out.push(line);
+//   }
+//   out.push('}');
+// }
 
-  const dst = `../src/assets-generated.ts`;
-  const allFiles = fs.readdirSync('.');
+function gatherFiles(where: string) {
+  let allFiles = fs.readdirSync(where);
   const loaders = {
     '.png': 'image',
     '.mp3': 'audio',
   };
 
   // filter which files to process
-  const files = [];
+  const loaderFiles = [];
   const aseprites = [];
   const jsonFiles = [];
   for (const fileName of allFiles) {
@@ -98,48 +114,44 @@ function main() {
       continue;
     }
     if (ext in loaders) {
-      files.push(fileName);
+      loaderFiles.push(fileName);
     }
     if (ext === '.json') {
       jsonFiles.push(fileName);
     }
   }
 
-  const jsonImportExportLines = genImportExportLines(jsonFiles);
-
-  exportAseprite(aseprites);
-
-  const out = [banner, ...jsonImportExportLines];
-
-  out.push('\n// Url imports');
-  for (const fileName of files) {
-    const jsName = jsNamify(fileName);
-    const line = `import ${jsName}Url from '../${assetsDir}/${fileName}';`;
-    out.push(line);
+  return {
+    loaderFiles,
+    aseprites,
+    jsonFiles,
+    allFiles,
   }
+}
 
-  // keys
-  out.push('\nexport const fkey = {');
-  for (const fileName of files) {
-    const jsName = jsNamify(fileName);
-    const line = `  ${jsName}: '${jsName}',`;
-    out.push(line);
-  }
-  out.push('}');
+function main() {
 
-  // preload function
-  out.push('\nexport function preloadAll(scene: Phaser.Scene) {');
-  for (const fileName of files) {
-    const ext = path.extname(fileName) as keyof typeof loaders;
-    const jsName = jsNamify(fileName);
-    const line = `  scene.load.${loaders[ext]}(fkey.${jsName}, ${jsName}Url);`;
-    out.push(line);
-  }
-  out.push('}');
+  // Simplify all the processing to just be local directory
+  process.chdir(assetsDir);
+
+  const dst = `../src/assets-generated.ts`;
+
+  let filesObj = gatherFiles('.');
+
+  // aseprite generates more files
+  exportAseprite(filesObj.aseprites);
+  filesObj = gatherFiles('.');
+
+  const urlLines = generateURLExports(filesObj.allFiles);
+
+  const out = [banner, ...urlLines];
+
+  // generatePhaserTools(out, filesObj.loaderFiles, loaders);
 
   fs.writeFileSync(dst, out.join('\n'));
-  console.log(banner);
-  console.log(files);
+  console.log("wrote", dst);
+  // console.log(banner);
+  // console.log(files);
 }
 
 main();
