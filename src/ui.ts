@@ -102,7 +102,7 @@ function afterRender(render: Matter.Render) {
   }
 
   if (heightImage && heightImage.image) {
-    ctx.drawImage(heightImage.image, heightImage.x + Math.cos(Date.now() / 100), heightImage.y + Math.sin(Date.now() / 100));
+    ctx.drawImage(heightImage.image, heightImage.x + 2 * Math.cos(Date.now() / 100), heightImage.y + 2 * Math.sin(Date.now() / 100));
   }
 
   endViewTransform(render);
@@ -201,6 +201,7 @@ export async function renderSetup(engine: Matter.Engine) {
   Matter.Events.on(mouseConstraint, "startdrag", (ev: DragEvent) => {
     const toyIndex = +ev.body.label;
     draggedToy = allToys[toyIndex];
+    console.log("draggedToy", draggedToy);
 
     activeScene.startDrag(ev);
   });
