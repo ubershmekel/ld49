@@ -357,9 +357,12 @@ class ShopScene extends BaseScene {
     } else {
       if (game.getBank() > toy.price) {
         game.buyToy(toyIndex);
-        startScene(TowerBuildingScene);
+        styleBody(body, toy.color);
+        // startScene(TowerBuildingScene);
+      } else {
+        // can't afford it
+        styleBody(body, unpurchasedStyle);
       }
-      styleBody(body, unpurchasedStyle);
     }
   }
 }

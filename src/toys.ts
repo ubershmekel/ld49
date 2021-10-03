@@ -37,16 +37,16 @@ export const allToys: Toy[] = [
     price: 1,
   },
   {
-    name: '1x1',
-    shape: '0 0, 100 0, 100 100, 0 100',
-    color: '#653700',
-    price: 5,
-  },
-  {
     name: 'tri-tip',
     shape: '0 0, -50 -86.6, -100 0',
     color: '#c20078',
     price: 3,
+  },
+  {
+    name: '1x1',
+    shape: '0 0, 100 0, 100 100, 0 100',
+    color: '#653700',
+    price: 5,
   },
   {
     name: 'noodle',
