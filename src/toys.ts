@@ -7,7 +7,7 @@ export interface Toy {
 
 export const allToys: Toy[] = [
   {
-    name: 'quarter',
+    name: 'skuer',
     shape: '0 0, 50 0, 50 50, 0 50',
     color: '#e50000',
     price: 1,
@@ -25,13 +25,13 @@ export const allToys: Toy[] = [
     price: 1,
   },
   {
-    name: 'star',
+    name: 'mariobait',
     shape: '50 0, 63 38, 100 38, 69 59, 82 100, 50 75, 18 100, 31 59, 0 38, 37 38',
     color: '#0343df',
     price: 1,
   },
   {
-    name: 'horseShoe',
+    name: 'horse-shoe',
     shape: '35 7, 19 17, 14 38, 14 58, 25 79, 45 85, 95 84, 95 66, 46 67, 34 59, 30 44, 33 29, 45 23, 95 23, 95 7, 53 7',
     color: '#ff81c0',
     price: 1,
@@ -71,5 +71,23 @@ export const allToys: Toy[] = [
     shape: '0 0, 250 0, 250 50, 0 50',
     color: '#029386',
     price: 50,
+  },
+  {
+    name: 't-bone',
+    shape: '0 0, 240 0, 240 -80, 160 -80, 160 -160, 80 -160, 80 -80, 0 -80',
+    color: '#ffb07c',
+    price: 100,
+  },
+  {
+    name: 'koko',
+    shape: '0 0, 80 0, 80 -80, 240 -80, 240 0, 160 0, 160 80, 0 80',
+    color: '#ff796c',
+    price: 100,
+  },
+  {
+    name: 'Pig God',
+    shape: '0 0, 240 0, 240 240, 0 240',
+    color: '#001146',
+    price: 500,
   },
 ];

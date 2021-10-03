@@ -80,7 +80,7 @@ function afterRender(render: Matter.Render) {
 
 // create limits for the viewport
 const extents = {
-  min: { x: -100, y: -300 },
+  min: { x: -100, y: -700 },
   max: { x: 1100, y: 700 }
 };
 
@@ -242,7 +242,7 @@ export async function renderSetup(engine: Matter.Engine) {
     translate = translateView(render, mouse, viewTarget);
 
     const height = towerHeight(engine);
-    const earn = height * height;
+    const earn = height * height * height;
     game.setEarn(earn);
     bankEl.textContent = "bank: $" + game.getBank();
     heightEl.textContent = "height: " + height;
@@ -324,9 +324,17 @@ class ShopScene extends BaseScene {
     items.toyBodies.map(bod => {
       bod.isStatic = true;
       const toyIndex = +bod.label;
-      if (!game.isPurchased(toyIndex)) {
-        styleBody(bod, unpurchasedStyle);
+      const toy = allToys[toyIndex];
+      if (game.isPurchased(toyIndex)) {
+        return;
       }
+
+      if (game.getBank() < toy.price) {
+        // can't afford it, keep it secret
+        Matter.World.remove(engine.world, bod);
+      }
+
+      styleBody(bod, unpurchasedStyle);
     });
 
     getToyBodies().map(body => {
@@ -344,6 +352,9 @@ class ShopScene extends BaseScene {
     // console.log("startdrag", mouse.position, body);
     const toyIndex = +body.label;
     const toy = allToys[toyIndex];
+    if (!toy) {
+      return;
+    }
     styleBody(body, toy.color);
   }
 
@@ -351,6 +362,9 @@ class ShopScene extends BaseScene {
     // console.log("enddrag", mouse.position, body);
     const toyIndex = +body.label;
     const toy = allToys[toyIndex];
+    if (!toy) {
+      return;
+    }
     styleBody(body, toy.color);
     if (game.isPurchased(toyIndex)) {
       startScene(TowerBuildingScene);

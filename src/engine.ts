@@ -63,7 +63,7 @@ function toysGrid(toysList: Toy[]) {
     const verts = xyString(toy.shape);
     // console.log("starVerts", verts);
     const x = 100 + (index % toysPerRow) * 150;
-    const y = 80 + 140 * Math.floor(index / toysPerRow);
+    const y = 80 + 160 * Math.floor(index / toysPerRow);
     const body = Matter.Bodies.fromVertices(x, y, [verts], {
       label: "" + index,
       render: {
